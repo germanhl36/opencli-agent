@@ -83,13 +83,14 @@ export default function App() {
     const selected = await openDialog({ directory: false, multiple: false, title: 'Select a file to analyse' });
     if (!selected) return;
     const filePath = Array.isArray(selected) ? selected[0] : selected;
+    setActivePanel('chat');
     try {
       const content = await readFileContent(filePath);
-      const fileName = filePath.split('/').pop() ?? filePath;
-      setActivePanel('chat');
+      // Support both / and \ path separators
+      const fileName = filePath.replace(/\\/g, '/').split('/').pop() ?? filePath;
       await send(`Please analyse this file — \`${fileName}\`:\n\n\`\`\`\n${content}\n\`\`\``);
     } catch (err) {
-      console.error('Failed to read file:', err);
+      await send(`⚠️ Failed to read file: ${String(err)}`);
     }
   }, [send]);
 
