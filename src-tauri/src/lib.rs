@@ -23,6 +23,7 @@ pub struct AppState {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let app_data_dir = app
                 .path()
@@ -64,6 +65,7 @@ pub fn run() {
             commands::fs::read_dir,
             commands::fs::apply_patch,
             commands::fs::delete_file,
+            commands::fs::read_file_content,
             commands::shell::run_command,
             commands::shell::cancel_command,
             commands::config::load_config,

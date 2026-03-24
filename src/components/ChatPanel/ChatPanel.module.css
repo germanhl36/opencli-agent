@@ -22,6 +22,29 @@
   color: var(--color-text);
 }
 
+.headerActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.openButton {
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.openButton:hover {
+  background: var(--color-accent);
+  color: white;
+}
+
 .resetButton {
   font-size: 12px;
   padding: 4px 10px;
@@ -36,6 +59,31 @@
 .resetButton:hover {
   background: var(--color-hover);
   color: var(--color-text);
+}
+
+.workspaceBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+}
+
+.workspaceIcon {
+  flex-shrink: 0;
+}
+
+.workspacePath {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  direction: rtl;
+  text-align: left;
 }
 
 .messageList {

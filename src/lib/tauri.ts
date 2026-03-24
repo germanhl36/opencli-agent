@@ -59,6 +59,10 @@ export async function deleteFile(path: string): Promise<void> {
   return invoke<void>('delete_file', { path });
 }
 
+export async function readFileContent(path: string): Promise<string> {
+  return invoke<string>('read_file_content', { path });
+}
+
 // ---- Shell Commands ----
 
 export interface CommandOutput {

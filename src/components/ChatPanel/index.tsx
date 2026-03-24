@@ -8,6 +8,9 @@ interface ChatPanelProps {
   streamingContent?: string;
   onSend: (content: string) => void;
   onReset: () => void;
+  workspacePath?: string | null;
+  onOpenFolder: () => void;
+  onOpenFile: () => void;
 }
 
 function RoleBadge({ role }: { role: string }) {
@@ -56,6 +59,9 @@ export default function ChatPanel({
   streamingContent,
   onSend,
   onReset,
+  workspacePath,
+  onOpenFolder,
+  onOpenFile,
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -87,15 +93,40 @@ export default function ChatPanel({
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>Chat</h2>
-        <button
-          className={styles.resetButton}
-          onClick={onReset}
-          title="Reset session"
-          aria-label="Reset session"
-        >
-          Reset
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            className={styles.openButton}
+            onClick={onOpenFolder}
+            title="Open folder as workspace"
+            aria-label="Open folder"
+          >
+            📁 Folder
+          </button>
+          <button
+            className={styles.openButton}
+            onClick={onOpenFile}
+            title="Open a file for analysis"
+            aria-label="Open file"
+          >
+            📄 File
+          </button>
+          <button
+            className={styles.resetButton}
+            onClick={onReset}
+            title="Reset session"
+            aria-label="Reset session"
+          >
+            Reset
+          </button>
+        </div>
       </div>
+
+      {workspacePath && (
+        <div className={styles.workspaceBar} title={workspacePath}>
+          <span className={styles.workspaceIcon}>🗂</span>
+          <span className={styles.workspacePath}>{workspacePath}</span>
+        </div>
+      )}
 
       <div className={styles.messageList} role="log" aria-live="polite">
         {messages.length === 0 && (

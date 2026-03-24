@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import './styles/globals.css';
 
 import ChatPanel from './components/ChatPanel';
@@ -12,7 +13,7 @@ import { useSession } from './hooks/useSession';
 import { useApproval } from './hooks/useApproval';
 import { useStream } from './hooks/useStream';
 
-import { loadConfig, saveConfig } from './lib/tauri';
+import { loadConfig, saveConfig, readFileContent } from './lib/tauri';
 import type { AppConfig, UnifiedDiff } from './lib/types';
 import styles from './App.module.css';
 
@@ -22,8 +23,9 @@ export default function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [activePanel, setActivePanel] = useState<Panel>('chat');
   const [activeDiff, setActiveDiff] = useState<UnifiedDiff | null>(null);
+  const [workspacePath, setWorkspacePath] = useState<string | null>(null);
 
-  const { messages, isLoading, error, send, reset } = useSession();
+  const { messages, isLoading, error, send, reset, start } = useSession();
   const { approve, reject, currentRequest } = useApproval();
   const { streamingContent, isStreaming } = useStream();
 
@@ -66,6 +68,29 @@ export default function App() {
 
   const handleSend = useCallback(async (content: string) => {
     await send(content);
+  }, [send]);
+
+  const handleOpenFolder = useCallback(async () => {
+    const selected = await openDialog({ directory: true, multiple: false, title: 'Select workspace folder' });
+    if (!selected) return;
+    const folder = Array.isArray(selected) ? selected[0] : selected;
+    setWorkspacePath(folder);
+    await start(undefined, undefined, folder);
+    setActivePanel('chat');
+  }, [start]);
+
+  const handleOpenFile = useCallback(async () => {
+    const selected = await openDialog({ directory: false, multiple: false, title: 'Select a file to analyse' });
+    if (!selected) return;
+    const filePath = Array.isArray(selected) ? selected[0] : selected;
+    try {
+      const content = await readFileContent(filePath);
+      const fileName = filePath.split('/').pop() ?? filePath;
+      setActivePanel('chat');
+      await send(`Please analyse this file — \`${fileName}\`:\n\n\`\`\`\n${content}\n\`\`\``);
+    } catch (err) {
+      console.error('Failed to read file:', err);
+    }
   }, [send]);
 
   return (
@@ -141,6 +166,9 @@ export default function App() {
             streamingContent={streamingContent || undefined}
             onSend={handleSend}
             onReset={reset}
+            workspacePath={workspacePath}
+            onOpenFolder={handleOpenFolder}
+            onOpenFile={handleOpenFile}
           />
         </div>
 

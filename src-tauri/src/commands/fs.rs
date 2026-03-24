@@ -105,3 +105,25 @@ pub async fn delete_file(
 
     executor.delete_file(&path).await.map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn read_file_content(path: String) -> Result<String, String> {
+    let p = std::path::Path::new(&path);
+    if !p.exists() {
+        return Err(format!("File not found: {}", path));
+    }
+    if p.is_dir() {
+        return Err("Path is a directory, not a file".to_string());
+    }
+    // Refuse files larger than 2 MB to avoid overwhelming the LLM context
+    let size = std::fs::metadata(&path)
+        .map_err(|e| e.to_string())?
+        .len();
+    if size > 2 * 1024 * 1024 {
+        return Err(format!(
+            "File is too large ({} KB). Maximum is 2 MB.",
+            size / 1024
+        ));
+    }
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
+}
