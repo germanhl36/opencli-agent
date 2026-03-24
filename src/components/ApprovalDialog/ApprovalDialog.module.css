@@ -1,0 +1,210 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    animation: none !important;
+  }
+}
+
+.dialog {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.15s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.actionIcon {
+  font-size: 20px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+  color: var(--color-text);
+}
+
+.riskBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.risk_low {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.risk_medium {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.risk_high {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fieldValue {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--color-surface);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  display: block;
+}
+
+.targetPath {
+  word-break: break-all;
+}
+
+.description {
+  font-size: 13px;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.argsPreview {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--color-surface);
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  overflow-x: auto;
+  color: var(--color-text);
+  margin: 0;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.confirmSection {
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.confirmPrompt {
+  font-size: 13px;
+  margin: 0;
+  color: #e65100;
+}
+
+.confirmInput {
+  padding: 6px 10px;
+  border: 1px solid #ffcc80;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: white;
+  color: #333;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.confirmInput:focus {
+  outline: none;
+  border-color: #e65100;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.rejectButton {
+  padding: 8px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rejectButton:hover {
+  background: var(--color-hover);
+}
+
+.approveButton {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.approveButton:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.approveButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -1,0 +1,9 @@
+name: scaffold-feature
+description: Scaffold a new feature with boilerplate
+steps:
+  - goal: "Plan feature structure"
+    prompt: "Based on the existing codebase structure, plan the files and structure needed for this feature."
+    allowed_tools: []
+  - goal: "Create feature files"
+    prompt: "Create the boilerplate files for the feature following the existing code patterns."
+    allowed_tools: ["file_write", "dir_create"]

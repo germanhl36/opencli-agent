@@ -1,0 +1,9 @@
+name: code-review
+description: Multi-step code review workflow
+steps:
+  - goal: "Analyse changed files"
+    prompt: "Review the diff and identify potential issues, bugs, and improvements."
+    allowed_tools: []
+  - goal: "Suggest improvements"
+    prompt: "Based on the analysis, suggest specific improvements with code examples."
+    allowed_tools: ["file_write"]

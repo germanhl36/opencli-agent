@@ -1,0 +1,4 @@
+name: write-tests
+description: Write tests for the selected code
+prompt: "Write comprehensive tests for the following code. Include unit tests for edge cases and happy paths."
+context_files: []

@@ -1,0 +1,154 @@
+/* ---- OpenCLI Agent — Global CSS Variables & Base Styles ---- */
+
+/* Light theme */
+:root,
+[data-theme="light"] {
+  --color-bg: #ffffff;
+  --color-surface: #f8f9fa;
+  --color-border: #e1e4e8;
+  --color-text: #24292e;
+  --color-text-muted: #586069;
+  --color-accent: #0366d6;
+  --color-accent-hover: #0258c1;
+  --color-hover: rgba(0, 0, 0, 0.04);
+
+  /* Chat bubble colors */
+  --color-user-bg: #dbeafe;
+  --color-user-text: #1d4ed8;
+  --color-user-bubble: #eff6ff;
+  --color-assistant-bg: #e9ecef;
+  --color-assistant-text: #495057;
+  --color-system-bg: #f3f4f6;
+  --color-system-text: #6b7280;
+  --color-tool-bg: #f0f4ff;
+
+  /* Diff colors */
+  --color-added-bg: #e6ffed;
+  --color-added-text: #22863a;
+  --color-added-line-bg: #f0fff4;
+  --color-removed-bg: #ffeef0;
+  --color-removed-text: #cb2431;
+  --color-removed-line-bg: #fff5f5;
+  --color-hunk-header-bg: #f1f8ff;
+
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', 'Monaco', monospace;
+  --font-size: 13px;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --color-bg: #0d1117;
+  --color-surface: #161b22;
+  --color-border: #30363d;
+  --color-text: #c9d1d9;
+  --color-text-muted: #8b949e;
+  --color-accent: #58a6ff;
+  --color-accent-hover: #388bfd;
+  --color-hover: rgba(255, 255, 255, 0.06);
+
+  --color-user-bg: #1e3a5f;
+  --color-user-text: #58a6ff;
+  --color-user-bubble: #112240;
+  --color-assistant-bg: #21262d;
+  --color-assistant-text: #c9d1d9;
+  --color-system-bg: #161b22;
+  --color-system-text: #8b949e;
+  --color-tool-bg: #1c2333;
+
+  --color-added-bg: #1a4731;
+  --color-added-text: #56d364;
+  --color-added-line-bg: #0d2818;
+  --color-removed-bg: #4b1818;
+  --color-removed-text: #ff7b72;
+  --color-removed-line-bg: #2a0f0f;
+  --color-hunk-header-bg: #1c2333;
+}
+
+/* System theme: follow OS preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #0d1117;
+    --color-surface: #161b22;
+    --color-border: #30363d;
+    --color-text: #c9d1d9;
+    --color-text-muted: #8b949e;
+    --color-accent: #58a6ff;
+    --color-accent-hover: #388bfd;
+    --color-hover: rgba(255, 255, 255, 0.06);
+
+    --color-user-bg: #1e3a5f;
+    --color-user-text: #58a6ff;
+    --color-user-bubble: #112240;
+    --color-assistant-bg: #21262d;
+    --color-assistant-text: #c9d1d9;
+    --color-system-bg: #161b22;
+    --color-system-text: #8b949e;
+    --color-tool-bg: #1c2333;
+
+    --color-added-bg: #1a4731;
+    --color-added-text: #56d364;
+    --color-added-line-bg: #0d2818;
+    --color-removed-bg: #4b1818;
+    --color-removed-text: #ff7b72;
+    --color-removed-line-bg: #2a0f0f;
+    --color-hunk-header-bg: #1c2333;
+  }
+}
+
+/* ---- Reset & Base ---- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--font-size);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ---- Focus ---- */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

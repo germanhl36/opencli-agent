@@ -1,0 +1,9 @@
+name: dependency-update
+description: Update project dependencies safely
+steps:
+  - goal: "Audit current dependencies"
+    prompt: "Review the current dependencies and identify outdated or vulnerable packages."
+    allowed_tools: []
+  - goal: "Update dependency files"
+    prompt: "Update the dependency files with the recommended changes."
+    allowed_tools: ["file_write"]

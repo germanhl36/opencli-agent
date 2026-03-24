@@ -1,0 +1,4 @@
+name: summarise-pr
+description: Summarise changes in the current diff
+prompt: "Summarise the changes in the current diff. Highlight key changes, potential risks, and what reviewers should focus on."
+context_files: []

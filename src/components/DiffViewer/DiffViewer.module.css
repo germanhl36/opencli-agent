@@ -1,0 +1,165 @@
+.container {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.fileHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+}
+
+.filePath {
+  font-weight: 600;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-added-bg);
+  color: var(--color-added-text);
+}
+
+.badgeDeleted {
+  background: var(--color-removed-bg);
+  color: var(--color-removed-text);
+}
+
+.hunkProgress {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.diffContent {
+  overflow-x: auto;
+}
+
+.hunk {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hunk:last-child {
+  border-bottom: none;
+}
+
+.hunkHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: var(--color-hunk-header-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hunkHeaderText {
+  color: var(--color-accent);
+  font-size: 11px;
+}
+
+.hunkActions {
+  display: flex;
+  gap: 6px;
+}
+
+.hunkButton {
+  font-size: 11px;
+  padding: 3px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+
+.hunkButton:hover {
+  opacity: 0.85;
+}
+
+.acceptButton {
+  background: var(--color-added-bg);
+  color: var(--color-added-text);
+}
+
+.rejectButton {
+  background: var(--color-removed-bg);
+  color: var(--color-removed-text);
+}
+
+.hunkLines {
+  overflow-x: auto;
+}
+
+.diffLine {
+  display: flex;
+  align-items: stretch;
+  min-height: 20px;
+  white-space: pre;
+}
+
+.line_added {
+  background: var(--color-added-line-bg);
+}
+
+.line_removed {
+  background: var(--color-removed-line-bg);
+}
+
+.line_context {
+  background: transparent;
+}
+
+.lineNumber {
+  display: inline-block;
+  min-width: 40px;
+  padding: 0 8px;
+  text-align: right;
+  color: var(--color-text-muted);
+  border-right: 1px solid var(--color-border);
+  user-select: none;
+  font-size: 11px;
+  line-height: 20px;
+}
+
+.linePrefix {
+  display: inline-block;
+  width: 20px;
+  text-align: center;
+  padding: 0 4px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.line_added .linePrefix {
+  color: var(--color-added-text);
+}
+
+.line_removed .linePrefix {
+  color: var(--color-removed-text);
+}
+
+.lineContent {
+  flex: 1;
+  padding: 0 8px;
+  color: var(--color-text);
+  line-height: 20px;
+  overflow-x: auto;
+}
+
+.noChanges {
+  padding: 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+}

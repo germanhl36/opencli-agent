@@ -1,0 +1,4 @@
+name: refactor
+description: Refactor selected code for clarity and maintainability
+prompt: "Refactor the following code to improve clarity, maintainability, and follow best practices. Explain your changes."
+context_files: []

@@ -1,0 +1,4 @@
+name: explain-code
+description: Explain what the selected code does
+prompt: "Explain what the following code does in clear, concise terms. Include the purpose, key logic, and any non-obvious behavior."
+context_files: []
