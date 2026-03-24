@@ -35,22 +35,72 @@ pub async fn save_config(
 
 #[tauri::command]
 pub async fn list_models(state: State<'_, AppState>) -> Result<Vec<ModelInfo>, String> {
-    let config = state.config.read().await;
-    let provider_type = config.active_provider.clone();
-    drop(config);
+    // Query all known providers in parallel and merge results.
+    // Providers that fail (no key, not running) are silently skipped.
+    let all_providers = ["ollama", "openrouter", "huggingface"];
 
-    // Get API key from keychain (never from config)
-    let api_key = keychain::get_api_key(&provider_type).ok().flatten();
+    let mut handles = Vec::new();
+    for provider_type in all_providers {
+        let api_key = keychain::get_api_key(provider_type).ok().flatten();
+        let pt = provider_type.to_string();
+        handles.push(tokio::spawn(async move {
+            let provider = create_provider(ProviderConfig {
+                provider_type: pt,
+                base_url: None,
+                api_key,
+                provider_name: None,
+            })
+            .ok()?;
+            provider.list_models().await.ok()
+        }));
+    }
 
-    let provider = create_provider(ProviderConfig {
-        provider_type,
-        base_url: None,
-        api_key,
-        provider_name: None,
-    })
-    .map_err(|e| e.to_string())?;
+    let mut models: Vec<ModelInfo> = Vec::new();
+    for handle in handles {
+        if let Ok(Some(mut provider_models)) = handle.await {
+            models.append(&mut provider_models);
+        }
+    }
 
-    provider.list_models().await.map_err(|e| e.to_string())
+    // For Ollama: also include popular models that aren't pulled yet,
+    // so users can see what's available and pull them.
+    let ollama_pulled: std::collections::HashSet<String> = models
+        .iter()
+        .filter(|m| m.provider == "ollama")
+        .map(|m| m.id.split(':').next().unwrap_or(&m.id).to_string())
+        .collect();
+
+    let popular_ollama = [
+        ("llama3.2:latest", "Llama 3.2 (3B)", 128_000u32),
+        ("llama3.2:3b", "Llama 3.2 3B", 128_000),
+        ("llama3.1:8b", "Llama 3.1 8B", 128_000),
+        ("llama3.1:70b", "Llama 3.1 70B", 128_000),
+        ("mistral:latest", "Mistral 7B", 32_000),
+        ("mistral-nemo:latest", "Mistral Nemo 12B", 128_000),
+        ("gemma3:4b", "Gemma 3 4B", 128_000),
+        ("gemma3:12b", "Gemma 3 12B", 128_000),
+        ("qwen2.5:7b", "Qwen 2.5 7B", 128_000),
+        ("qwen2.5-coder:7b", "Qwen 2.5 Coder 7B", 128_000),
+        ("deepseek-coder-v2:latest", "DeepSeek Coder V2", 128_000),
+        ("codellama:latest", "Code Llama", 16_000),
+        ("phi4:latest", "Phi-4 14B", 16_000),
+        ("phi3:latest", "Phi-3 Medium", 128_000),
+        ("nomic-embed-text:latest", "Nomic Embed Text", 8_192),
+    ];
+
+    for (id, name, ctx) in popular_ollama {
+        let base = id.split(':').next().unwrap_or(id);
+        if !ollama_pulled.contains(base) {
+            models.push(ModelInfo {
+                id: id.to_string(),
+                name: format!("{} ↓ pull to use", name),
+                provider: "ollama".to_string(),
+                context_length: Some(ctx),
+            });
+        }
+    }
+
+    Ok(models)
 }
 
 #[tauri::command]

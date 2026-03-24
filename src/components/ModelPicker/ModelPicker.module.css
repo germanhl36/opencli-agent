@@ -149,6 +149,24 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
+.unpulledModel {
+  opacity: 0.6;
+}
+
+.unpulledModel:hover {
+  opacity: 1;
+}
+
+.pullBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--color-text-muted);
+  color: var(--color-bg);
+  white-space: nowrap;
+}
+
 .modelInfo {
   display: flex;
   flex-direction: column;

@@ -99,16 +99,19 @@ export default function ModelPicker({ config, onConfigChange }: ModelPickerProps
         {filtered.map((model) => {
           const isSelected =
             model.id === config.activeModel && model.provider === config.activeProvider;
+          const needsPull = model.name.includes('↓ pull to use');
+          const displayName = model.name.replace(' ↓ pull to use', '');
           return (
             <button
               key={`${model.provider}:${model.id}`}
               role="option"
               aria-selected={isSelected}
-              className={`${styles.modelItem} ${isSelected ? styles.selectedModel : ''}`}
+              className={`${styles.modelItem} ${isSelected ? styles.selectedModel : ''} ${needsPull ? styles.unpulledModel : ''}`}
               onClick={() => handleSelect(model)}
+              title={needsPull ? `Run: ollama pull ${model.id}` : model.id}
             >
               <div className={styles.modelInfo}>
-                <span className={styles.modelName}>{model.name}</span>
+                <span className={styles.modelName}>{displayName}</span>
                 <span className={styles.modelId}>{model.id}</span>
               </div>
               <div className={styles.modelMeta}>
@@ -118,6 +121,7 @@ export default function ModelPicker({ config, onConfigChange }: ModelPickerProps
                     {(model.contextLength / 1000).toFixed(0)}k ctx
                   </span>
                 )}
+                {needsPull && <span className={styles.pullBadge}>↓ pull</span>}
               </div>
             </button>
           );
