@@ -1,9 +1,11 @@
+use crate::error::OpenCLIError;
+use crate::llm::provider::{
+    LLMProvider, LLMRequest, LLMResponse, Message, ModelInfo, StopReason, TokenEvent, ToolCall,
+};
 use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::Value;
 use tokio::sync::mpsc::Sender;
-use crate::error::OpenCLIError;
-use crate::llm::provider::{LLMProvider, LLMRequest, LLMResponse, Message, ModelInfo, StopReason, TokenEvent, ToolCall};
 
 pub struct HuggingFaceProvider {
     api_key: String,
@@ -15,9 +17,8 @@ impl HuggingFaceProvider {
     pub fn new(api_key: String, model_endpoint: Option<String>) -> Self {
         Self {
             api_key,
-            model_endpoint: model_endpoint.unwrap_or_else(|| {
-                "https://api-inference.huggingface.co/models".to_string()
-            }),
+            model_endpoint: model_endpoint
+                .unwrap_or_else(|| "https://api-inference.huggingface.co/models".to_string()),
             client: Client::new(),
         }
     }
@@ -43,7 +44,8 @@ impl LLMProvider for HuggingFaceProvider {
             "max_tokens": req.max_tokens.unwrap_or(4096),
         });
 
-        let resp = self.client
+        let resp = self
+            .client
             .post(&endpoint)
             .bearer_auth(&self.api_key)
             .json(&body)
@@ -54,10 +56,16 @@ impl LLMProvider for HuggingFaceProvider {
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().await.unwrap_or_default();
-            return Err(OpenCLIError::Llm(format!("HuggingFace error {}: {}", status, text)));
+            return Err(OpenCLIError::Llm(format!(
+                "HuggingFace error {}: {}",
+                status, text
+            )));
         }
 
-        let json: Value = resp.json().await.map_err(|e| OpenCLIError::Llm(e.to_string()))?;
+        let json: Value = resp
+            .json()
+            .await
+            .map_err(|e| OpenCLIError::Llm(e.to_string()))?;
         let content = json
             .get("choices")
             .and_then(|c| c.as_array())
@@ -76,7 +84,11 @@ impl LLMProvider for HuggingFaceProvider {
         })
     }
 
-    async fn stream_tokens(&self, req: LLMRequest, tx: Sender<TokenEvent>) -> Result<(), OpenCLIError> {
+    async fn stream_tokens(
+        &self,
+        req: LLMRequest,
+        tx: Sender<TokenEvent>,
+    ) -> Result<(), OpenCLIError> {
         use tokio_stream::StreamExt;
 
         let messages = self.format_messages(&req.messages);
@@ -89,7 +101,8 @@ impl LLMProvider for HuggingFaceProvider {
             "stream": true,
         });
 
-        let resp = self.client
+        let resp = self
+            .client
             .post(&endpoint)
             .bearer_auth(&self.api_key)
             .json(&body)
@@ -100,7 +113,11 @@ impl LLMProvider for HuggingFaceProvider {
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().await.unwrap_or_default();
-            let _ = tx.send(TokenEvent::Error { message: format!("HuggingFace error {}: {}", status, text) }).await;
+            let _ = tx
+                .send(TokenEvent::Error {
+                    message: format!("HuggingFace error {}: {}", status, text),
+                })
+                .await;
             return Ok(());
         }
 
@@ -112,7 +129,11 @@ impl LLMProvider for HuggingFaceProvider {
                 let line = line.trim();
                 if line.is_empty() || line == "data: [DONE]" {
                     if line == "data: [DONE]" {
-                        let _ = tx.send(TokenEvent::Stop { reason: StopReason::EndTurn }).await;
+                        let _ = tx
+                            .send(TokenEvent::Stop {
+                                reason: StopReason::EndTurn,
+                            })
+                            .await;
                     }
                     continue;
                 }
@@ -126,7 +147,11 @@ impl LLMProvider for HuggingFaceProvider {
                         .and_then(|d| d.get("content"))
                         .and_then(|c| c.as_str())
                     {
-                        let _ = tx.send(TokenEvent::Text { delta: delta.to_string() }).await;
+                        let _ = tx
+                            .send(TokenEvent::Text {
+                                delta: delta.to_string(),
+                            })
+                            .await;
                     }
                 }
             }
@@ -160,10 +185,13 @@ impl LLMProvider for HuggingFaceProvider {
     }
 
     fn format_messages(&self, msgs: &[Message]) -> Value {
-        serde_json::json!(msgs.iter().map(|m| serde_json::json!({
-            "role": m.role,
-            "content": m.content,
-        })).collect::<Vec<_>>())
+        serde_json::json!(msgs
+            .iter()
+            .map(|m| serde_json::json!({
+                "role": m.role,
+                "content": m.content,
+            }))
+            .collect::<Vec<_>>())
     }
 
     fn parse_tool_call(&self, _raw: &Value) -> Option<ToolCall> {

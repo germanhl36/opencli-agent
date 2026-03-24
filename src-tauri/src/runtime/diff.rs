@@ -61,25 +61,26 @@ pub fn generate_diff(path: &str, old_content: &str, new_content: &str) -> Unifie
 
         for op in group {
             for change in diff.iter_changes(op) {
-                let (kind, old_no, new_no): (DiffLineKind, Option<u32>, Option<u32>) = match change.tag() {
-                    ChangeTag::Delete => {
-                        let n = old_lineno as u32;
-                        old_lineno += 1;
-                        (DiffLineKind::Removed, Some(n), None)
-                    }
-                    ChangeTag::Insert => {
-                        let n = new_lineno as u32;
-                        new_lineno += 1;
-                        (DiffLineKind::Added, None, Some(n))
-                    }
-                    ChangeTag::Equal => {
-                        let o = old_lineno as u32;
-                        let n = new_lineno as u32;
-                        old_lineno += 1;
-                        new_lineno += 1;
-                        (DiffLineKind::Context, Some(o), Some(n))
-                    }
-                };
+                let (kind, old_no, new_no): (DiffLineKind, Option<u32>, Option<u32>) =
+                    match change.tag() {
+                        ChangeTag::Delete => {
+                            let n = old_lineno as u32;
+                            old_lineno += 1;
+                            (DiffLineKind::Removed, Some(n), None)
+                        }
+                        ChangeTag::Insert => {
+                            let n = new_lineno as u32;
+                            new_lineno += 1;
+                            (DiffLineKind::Added, None, Some(n))
+                        }
+                        ChangeTag::Equal => {
+                            let o = old_lineno as u32;
+                            let n = new_lineno as u32;
+                            old_lineno += 1;
+                            new_lineno += 1;
+                            (DiffLineKind::Context, Some(o), Some(n))
+                        }
+                    };
                 lines.push(DiffLine {
                     kind,
                     content: change.value().to_string(),
@@ -89,10 +90,7 @@ pub fn generate_diff(path: &str, old_content: &str, new_content: &str) -> Unifie
             }
         }
 
-        hunks.push(Hunk {
-            header,
-            lines,
-        });
+        hunks.push(Hunk { header, lines });
     }
 
     UnifiedDiff {

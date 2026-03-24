@@ -1,7 +1,7 @@
+use crate::error::OpenCLIError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::Sender;
-use crate::error::OpenCLIError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -79,7 +79,11 @@ pub enum StopReason {
 #[async_trait]
 pub trait LLMProvider: Send + Sync {
     async fn complete(&self, req: LLMRequest) -> Result<LLMResponse, OpenCLIError>;
-    async fn stream_tokens(&self, req: LLMRequest, tx: Sender<TokenEvent>) -> Result<(), OpenCLIError>;
+    async fn stream_tokens(
+        &self,
+        req: LLMRequest,
+        tx: Sender<TokenEvent>,
+    ) -> Result<(), OpenCLIError>;
     async fn list_models(&self) -> Result<Vec<ModelInfo>, OpenCLIError>;
     fn format_messages(&self, msgs: &[Message]) -> serde_json::Value;
     fn parse_tool_call(&self, raw: &serde_json::Value) -> Option<ToolCall>;

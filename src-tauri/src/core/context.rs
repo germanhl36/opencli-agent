@@ -1,8 +1,8 @@
+use crate::error::OpenCLIError;
+use ignore::WalkBuilder;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use serde::{Deserialize, Serialize};
-use ignore::WalkBuilder;
-use crate::error::OpenCLIError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -44,7 +44,10 @@ impl ContextBuilder {
         self
     }
 
-    pub fn build_snapshot(&self, token_budget: Option<u32>) -> Result<ContextSnapshot, OpenCLIError> {
+    pub fn build_snapshot(
+        &self,
+        token_budget: Option<u32>,
+    ) -> Result<ContextSnapshot, OpenCLIError> {
         let budget = token_budget.unwrap_or(TOKEN_BUDGET);
         let budget_chars = (budget as usize) * CHARS_PER_TOKEN;
 
@@ -156,12 +159,9 @@ impl ContextBuilder {
 
 fn is_binary_path(path: &Path) -> bool {
     let binary_extensions = [
-        "png", "jpg", "jpeg", "gif", "ico", "svg", "bmp", "webp",
-        "pdf", "zip", "tar", "gz", "bz2", "xz", "7z", "rar",
-        "exe", "dll", "so", "dylib", "a", "lib",
-        "mp3", "mp4", "wav", "avi", "mov", "mkv",
-        "woff", "woff2", "ttf", "otf", "eot",
-        "lock",
+        "png", "jpg", "jpeg", "gif", "ico", "svg", "bmp", "webp", "pdf", "zip", "tar", "gz", "bz2",
+        "xz", "7z", "rar", "exe", "dll", "so", "dylib", "a", "lib", "mp3", "mp4", "wav", "avi",
+        "mov", "mkv", "woff", "woff2", "ttf", "otf", "eot", "lock",
     ];
     if let Some(ext) = path.extension() {
         let ext_str = ext.to_string_lossy().to_lowercase();
@@ -199,7 +199,7 @@ fn read_partial_file(path: &Path, max_bytes: usize) -> Option<String> {
     let mut buf = vec![0u8; max_bytes];
     let n = file.read(&mut buf).ok()?;
     buf.truncate(n);
-    String::from_utf8(buf.clone()).ok().or_else(|| {
-        Some(String::from_utf8_lossy(&buf).into_owned())
-    })
+    String::from_utf8(buf.clone())
+        .ok()
+        .or_else(|| Some(String::from_utf8_lossy(&buf).into_owned()))
 }

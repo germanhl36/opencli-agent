@@ -1,7 +1,7 @@
+use super::approval::{ActionRequest, ActionType, RiskLevel};
+use crate::error::OpenCLIError;
 use serde_json::Value;
 use uuid::Uuid;
-use crate::error::OpenCLIError;
-use super::approval::{ActionRequest, ActionType, RiskLevel};
 
 pub fn parse_action_request(raw: &Value) -> Result<ActionRequest, OpenCLIError> {
     let action_str = raw
@@ -14,7 +14,12 @@ pub fn parse_action_request(raw: &Value) -> Result<ActionRequest, OpenCLIError> 
         "file_delete" => ActionType::FileDelete,
         "dir_create" => ActionType::DirCreate,
         "shell_run" => ActionType::ShellRun,
-        other => return Err(OpenCLIError::Parse(format!("Unknown action type: {}", other))),
+        other => {
+            return Err(OpenCLIError::Parse(format!(
+                "Unknown action type: {}",
+                other
+            )))
+        }
     };
 
     let target_path = raw
@@ -23,7 +28,10 @@ pub fn parse_action_request(raw: &Value) -> Result<ActionRequest, OpenCLIError> 
         .unwrap_or("")
         .to_string();
 
-    let args = raw.get("args").cloned().unwrap_or(Value::Object(Default::default()));
+    let args = raw
+        .get("args")
+        .cloned()
+        .unwrap_or(Value::Object(Default::default()));
 
     let description = raw
         .get("description")
@@ -46,12 +54,16 @@ pub fn parse_action_request(raw: &Value) -> Result<ActionRequest, OpenCLIError> 
 fn classify_risk(action: &ActionType, target_path: &str, args: &Value) -> RiskLevel {
     match action {
         ActionType::ShellRun => {
-            let cmd = args
-                .get("command")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let cmd = args.get("command").and_then(|v| v.as_str()).unwrap_or("");
             // Dangerous commands = high risk
-            let dangerous = ["rm -rf", "sudo", "chmod 777", "dd if=", "mkfs", ":(){:|:&};:"];
+            let dangerous = [
+                "rm -rf",
+                "sudo",
+                "chmod 777",
+                "dd if=",
+                "mkfs",
+                ":(){:|:&};:",
+            ];
             if dangerous.iter().any(|d| cmd.contains(d)) {
                 RiskLevel::High
             } else {
@@ -74,7 +86,10 @@ fn classify_risk(action: &ActionType, target_path: &str, args: &Value) -> RiskLe
     }
 }
 
-pub fn parse_tool_call_from_llm(tool_name: &str, arguments: &Value) -> Result<ActionRequest, OpenCLIError> {
+pub fn parse_tool_call_from_llm(
+    tool_name: &str,
+    arguments: &Value,
+) -> Result<ActionRequest, OpenCLIError> {
     let mut combined = serde_json::json!({
         "action": tool_name,
     });

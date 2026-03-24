@@ -1,6 +1,6 @@
+use crate::error::OpenCLIError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use crate::error::OpenCLIError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentStep {

@@ -2,9 +2,9 @@ pub mod agent;
 pub mod commands;
 pub mod skill;
 
-use crate::plugins::skill::Skill;
 use crate::plugins::agent::Agent;
 use crate::plugins::commands::CommandAlias;
+use crate::plugins::skill::Skill;
 
 #[derive(Debug, Default)]
 pub struct PluginRegistry {

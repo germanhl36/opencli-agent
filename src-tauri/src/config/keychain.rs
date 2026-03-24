@@ -3,7 +3,8 @@ use crate::error::OpenCLIError;
 pub fn store_api_key(provider: &str, key: &str) -> Result<(), OpenCLIError> {
     let entry = keyring::Entry::new("opencli", provider)
         .map_err(|e| OpenCLIError::Keychain(e.to_string()))?;
-    entry.set_password(key)
+    entry
+        .set_password(key)
         .map_err(|e| OpenCLIError::Keychain(e.to_string()))
 }
 
@@ -20,6 +21,7 @@ pub fn get_api_key(provider: &str) -> Result<Option<String>, OpenCLIError> {
 pub fn delete_api_key(provider: &str) -> Result<(), OpenCLIError> {
     let entry = keyring::Entry::new("opencli", provider)
         .map_err(|e| OpenCLIError::Keychain(e.to_string()))?;
-    entry.delete_credential()
+    entry
+        .delete_credential()
         .map_err(|e| OpenCLIError::Keychain(e.to_string()))
 }

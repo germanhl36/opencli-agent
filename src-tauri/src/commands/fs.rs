@@ -1,8 +1,8 @@
-use tauri::State;
-use serde::{Deserialize, Serialize};
-use crate::AppState;
 use crate::runtime::diff::UnifiedDiff;
 use crate::runtime::fs_executor::FsExecutor;
+use crate::AppState;
+use serde::{Deserialize, Serialize};
+use tauri::State;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -38,7 +38,11 @@ pub async fn read_dir(path: String) -> Result<Vec<DirEntry>, String> {
             name: entry.file_name().to_string_lossy().to_string(),
             path: entry.path().to_string_lossy().to_string(),
             is_dir: metadata.is_dir(),
-            size_bytes: if metadata.is_file() { metadata.len() } else { 0 },
+            size_bytes: if metadata.is_file() {
+                metadata.len()
+            } else {
+                0
+            },
             modified_at,
         });
     }
@@ -74,7 +78,10 @@ pub async fn apply_patch(
         app_handle,
     );
 
-    executor.apply_patch(&path, &new_content).await.map_err(|e| e.to_string())
+    executor
+        .apply_patch(&path, &new_content)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

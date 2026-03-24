@@ -1,9 +1,9 @@
+use crate::error::OpenCLIError;
+use crate::llm::provider::{LLMRequest, Message};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::error::OpenCLIError;
-use crate::llm::provider::{Message, LLMRequest};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -138,16 +138,22 @@ impl SessionManager {
         Ok(())
     }
 
-    pub async fn build_llm_request(&self, context_prompt: Option<String>) -> Result<LLMRequest, OpenCLIError> {
+    pub async fn build_llm_request(
+        &self,
+        context_prompt: Option<String>,
+    ) -> Result<LLMRequest, OpenCLIError> {
         let state = self.state.read().await;
         let mut messages = state.to_llm_messages();
 
         // Prepend context as system message if provided
         if let Some(ctx) = context_prompt {
-            messages.insert(0, Message {
-                role: "system".to_string(),
-                content: ctx,
-            });
+            messages.insert(
+                0,
+                Message {
+                    role: "system".to_string(),
+                    content: ctx,
+                },
+            );
         }
 
         Ok(LLMRequest {

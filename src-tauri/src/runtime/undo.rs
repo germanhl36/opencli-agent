@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::error::OpenCLIError;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,7 +14,9 @@ pub struct UndoStack {
 
 impl UndoStack {
     pub fn new() -> Self {
-        Self { patches: Vec::new() }
+        Self {
+            patches: Vec::new(),
+        }
     }
 
     pub fn push(&mut self, patch: ReversePatch) {

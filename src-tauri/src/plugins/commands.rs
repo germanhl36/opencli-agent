@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use std::path::Path;
-use std::collections::HashMap;
 use crate::error::OpenCLIError;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommandAlias {
@@ -26,7 +26,10 @@ pub fn load_commands_from_file(path: &Path) -> Result<Vec<CommandAlias>, OpenCLI
 }
 
 pub fn resolve_command(name: &str, aliases: &[CommandAlias]) -> Option<String> {
-    aliases.iter().find(|a| a.name == name).map(|a| a.command.clone())
+    aliases
+        .iter()
+        .find(|a| a.name == name)
+        .map(|a| a.command.clone())
 }
 
 pub fn substitute_args(command: &str, args: &HashMap<String, String>) -> String {

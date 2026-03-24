@@ -58,10 +58,7 @@ pub fn truncate_to_budget(req: LLMRequest, max_tokens: u32) -> LLMRequest {
         total_chars -= removed_len;
     }
 
-    LLMRequest {
-        messages,
-        ..req
-    }
+    LLMRequest { messages, ..req }
 }
 
 /// Build a context system prompt from a snapshot

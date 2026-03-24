@@ -1,10 +1,10 @@
+use crate::error::OpenCLIError;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{Mutex, oneshot};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use tauri::Emitter;
-use crate::error::OpenCLIError;
+use tokio::sync::{oneshot, Mutex};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -92,7 +92,10 @@ impl ApprovalGate {
             let _ = tx.send(outcome);
             Ok(())
         } else {
-            Err(OpenCLIError::Config(format!("No pending approval with id {}", token)))
+            Err(OpenCLIError::Config(format!(
+                "No pending approval with id {}",
+                token
+            )))
         }
     }
 }

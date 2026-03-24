@@ -1,6 +1,6 @@
-use tauri::State;
-use crate::AppState;
 use crate::runtime::shell::ShellExecutor;
+use crate::AppState;
+use tauri::State;
 
 #[tauri::command]
 pub async fn run_command(
@@ -17,12 +17,7 @@ pub async fn run_command(
         )
     };
 
-    let executor = ShellExecutor::new(
-        timeout_secs,
-        sandbox_enabled,
-        sandbox_image,
-        working_dir,
-    );
+    let executor = ShellExecutor::new(timeout_secs, sandbox_enabled, sandbox_image, working_dir);
 
     let output = executor.run(&command).await.map_err(|e| e.to_string())?;
 

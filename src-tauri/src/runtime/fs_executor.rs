@@ -1,12 +1,14 @@
+use crate::core::approval::{
+    classify_risk, ActionRequest, ActionType, ApprovalGate, ApprovalOutcome,
+};
+use crate::error::OpenCLIError;
+use crate::runtime::audit::{AuditLogger, AuditStatus};
+use crate::runtime::diff::{generate_diff, UnifiedDiff};
+use crate::runtime::undo::{ReversePatch, UndoStack};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
-use crate::error::OpenCLIError;
-use crate::core::approval::{ActionRequest, ActionType, ApprovalGate, ApprovalOutcome, classify_risk};
-use crate::runtime::undo::{ReversePatch, UndoStack};
-use crate::runtime::audit::{AuditLogger, AuditStatus};
-use crate::runtime::diff::{generate_diff, UnifiedDiff};
 
 pub struct FsExecutor {
     approval_gate: Arc<ApprovalGate>,
@@ -56,7 +58,8 @@ impl FsExecutor {
             risk: classify_risk(&ActionType::FileWrite, path),
         };
 
-        let outcome = self.approval_gate
+        let outcome = self
+            .approval_gate
             .request_approval(req, &self.app_handle)
             .await?;
 
@@ -70,7 +73,11 @@ impl FsExecutor {
                 // Undo entry
                 self.undo_stack.lock().await.push(ReversePatch {
                     path: path.to_string(),
-                    original_content: if old_content.is_empty() { None } else { Some(old_content) },
+                    original_content: if old_content.is_empty() {
+                        None
+                    } else {
+                        Some(old_content)
+                    },
                 });
 
                 // Audit
@@ -117,7 +124,8 @@ impl FsExecutor {
             risk: classify_risk(&ActionType::FileDelete, path),
         };
 
-        let outcome = self.approval_gate
+        let outcome = self
+            .approval_gate
             .request_approval(req, &self.app_handle)
             .await?;
 

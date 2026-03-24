@@ -1,10 +1,10 @@
-use tauri::{State, Manager};
-use crate::AppState;
-use crate::config::schema::AppConfig;
-use crate::config::loader::ConfigLoader;
-use crate::llm::provider::ModelInfo;
-use crate::llm::factory::{create_provider, ProviderConfig};
 use crate::config::keychain;
+use crate::config::loader::ConfigLoader;
+use crate::config::schema::AppConfig;
+use crate::llm::factory::{create_provider, ProviderConfig};
+use crate::llm::provider::ModelInfo;
+use crate::AppState;
+use tauri::{Manager, State};
 
 #[tauri::command]
 pub async fn load_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
@@ -20,7 +20,9 @@ pub async fn save_config(
 ) -> Result<(), String> {
     ConfigLoader::validate(&config).map_err(|e| e.to_string())?;
 
-    let app_data_dir = app.path().app_data_dir()
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
         .map_err(|e: tauri::Error| e.to_string())?;
     let loader = ConfigLoader::new(app_data_dir);
     loader.save(&config).map_err(|e| e.to_string())?;
@@ -32,24 +34,21 @@ pub async fn save_config(
 }
 
 #[tauri::command]
-pub async fn list_models(
-    state: State<'_, AppState>,
-) -> Result<Vec<ModelInfo>, String> {
+pub async fn list_models(state: State<'_, AppState>) -> Result<Vec<ModelInfo>, String> {
     let config = state.config.read().await;
     let provider_type = config.active_provider.clone();
     drop(config);
 
     // Get API key from keychain (never from config)
-    let api_key = keychain::get_api_key(&provider_type)
-        .ok()
-        .flatten();
+    let api_key = keychain::get_api_key(&provider_type).ok().flatten();
 
     let provider = create_provider(ProviderConfig {
         provider_type,
         base_url: None,
         api_key,
         provider_name: None,
-    }).map_err(|e| e.to_string())?;
+    })
+    .map_err(|e| e.to_string())?;
 
     provider.list_models().await.map_err(|e| e.to_string())
 }
@@ -66,12 +65,16 @@ pub async fn reload_plugins(
 ) -> Result<(), String> {
     use std::path::PathBuf;
 
-    let app_data_dir = app.path().app_data_dir()
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
         .map_err(|e: tauri::Error| e.to_string())?;
 
     // Look for skills/agents in app_data_dir and working directory
     let config = state.config.read().await;
-    let working_dir = config.working_directory.clone()
+    let working_dir = config
+        .working_directory
+        .clone()
         .map(PathBuf::from)
         .unwrap_or_else(|| app_data_dir.clone());
     drop(config);
@@ -93,7 +96,8 @@ pub async fn activate_skill(
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let registry = state.plugin_registry.read().await;
-    let skill = registry.find_skill(&skill_name)
+    let skill = registry
+        .find_skill(&skill_name)
         .ok_or_else(|| format!("Skill '{}' not found", skill_name))?
         .clone();
     drop(registry);
@@ -113,18 +117,23 @@ pub async fn start_agent(
     state: State<'_, AppState>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let registry = state.plugin_registry.read().await;
-    let agent = registry.find_agent(&agent_name)
+    let agent = registry
+        .find_agent(&agent_name)
         .ok_or_else(|| format!("Agent '{}' not found", agent_name))?
         .clone();
     drop(registry);
 
-    let steps: Vec<serde_json::Value> = agent.steps.iter().map(|step| {
-        serde_json::json!({
-            "goal": step.goal,
-            "prompt": step.prompt,
-            "allowedTools": step.allowed_tools,
+    let steps: Vec<serde_json::Value> = agent
+        .steps
+        .iter()
+        .map(|step| {
+            serde_json::json!({
+                "goal": step.goal,
+                "prompt": step.prompt,
+                "allowedTools": step.allowed_tools,
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(steps)
 }

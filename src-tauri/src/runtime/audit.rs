@@ -1,10 +1,10 @@
+use crate::error::OpenCLIError;
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
-use chrono::Utc;
 use uuid::Uuid;
-use crate::error::OpenCLIError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -64,7 +64,11 @@ impl AuditLogger {
             file.flush()?;
         } else {
             // Try to reopen the file if it was not available at init
-            if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&self.path) {
+            if let Ok(mut f) = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&self.path)
+            {
                 f.write_all(line.as_bytes())?;
             }
         }

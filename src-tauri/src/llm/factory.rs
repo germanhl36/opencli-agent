@@ -1,12 +1,10 @@
-use std::sync::Arc;
 use crate::error::OpenCLIError;
 use crate::llm::provider::LLMProvider;
 use crate::llm::providers::{
-    ollama::OllamaProvider,
+    custom::CustomProvider, huggingface::HuggingFaceProvider, ollama::OllamaProvider,
     openrouter::OpenRouterProvider,
-    huggingface::HuggingFaceProvider,
-    custom::CustomProvider,
 };
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct ProviderConfig {
@@ -35,9 +33,16 @@ pub fn create_provider(config: ProviderConfig) -> Result<Arc<dyn LLMProvider>, O
             let url = config.base_url.ok_or_else(|| {
                 OpenCLIError::Config("Custom provider requires a base URL".to_string())
             })?;
-            Ok(Arc::new(CustomProvider::new(url, config.api_key, config.provider_name)))
+            Ok(Arc::new(CustomProvider::new(
+                url,
+                config.api_key,
+                config.provider_name,
+            )))
         }
-        other => Err(OpenCLIError::Llm(format!("Unknown provider type: {}", other))),
+        other => Err(OpenCLIError::Llm(format!(
+            "Unknown provider type: {}",
+            other
+        ))),
     }
 }
 

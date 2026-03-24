@@ -1,12 +1,12 @@
-use tauri::State;
-use uuid::Uuid;
-use crate::AppState;
-use crate::core::session::SessionMessage;
-use crate::core::context::{ContextBuilder, ContextSnapshot};
+use crate::config::keychain;
 use crate::core::approval::ApprovalOutcome;
+use crate::core::context::{ContextBuilder, ContextSnapshot};
+use crate::core::session::SessionMessage;
 use crate::llm::factory::{create_provider, ProviderConfig};
 use crate::llm::normaliser::build_context_prompt;
-use crate::config::keychain;
+use crate::AppState;
+use tauri::State;
+use uuid::Uuid;
 
 #[tauri::command]
 pub async fn start_session(
@@ -50,7 +50,8 @@ pub async fn send_message(
             let wd = wd.clone();
             drop(session);
             let builder = ContextBuilder::new(std::path::PathBuf::from(&wd));
-            builder.build_snapshot(None)
+            builder
+                .build_snapshot(None)
                 .ok()
                 .map(|snapshot| build_context_prompt(&snapshot))
         } else {
@@ -65,9 +66,7 @@ pub async fn send_message(
     };
 
     // Get API key from keychain (never from config)
-    let api_key = keychain::get_api_key(&provider_type)
-        .ok()
-        .flatten();
+    let api_key = keychain::get_api_key(&provider_type).ok().flatten();
 
     let provider = create_provider(ProviderConfig {
         provider_type,
@@ -100,12 +99,17 @@ pub async fn send_message(
         tools: None,
     };
 
-    let response = provider.complete(request).await.map_err(|e| e.to_string())?;
+    let response = provider
+        .complete(request)
+        .await
+        .map_err(|e| e.to_string())?;
 
     // Store assistant response
     {
         let mut session = state.session.write().await;
-        session.messages.push(SessionMessage::assistant(response.content.clone()));
+        session
+            .messages
+            .push(SessionMessage::assistant(response.content.clone()));
     }
 
     Ok(response.content)
@@ -161,7 +165,11 @@ pub async fn resolve_approval(
     } else {
         ApprovalOutcome::Rejected
     };
-    state.approval_gate.resolve(id, outcome).await.map_err(|e| e.to_string())
+    state
+        .approval_gate
+        .resolve(id, outcome)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

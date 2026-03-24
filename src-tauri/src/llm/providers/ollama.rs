@@ -1,9 +1,11 @@
+use crate::error::OpenCLIError;
+use crate::llm::provider::{
+    LLMProvider, LLMRequest, LLMResponse, Message, ModelInfo, StopReason, TokenEvent, ToolCall,
+};
 use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::Value;
 use tokio::sync::mpsc::Sender;
-use crate::error::OpenCLIError;
-use crate::llm::provider::{LLMProvider, LLMRequest, LLMResponse, Message, ModelInfo, StopReason, TokenEvent, ToolCall};
 
 pub struct OllamaProvider {
     base_url: String,
@@ -33,7 +35,8 @@ impl LLMProvider for OllamaProvider {
             }
         });
 
-        let resp = self.client
+        let resp = self
+            .client
             .post(format!("{}/api/chat", self.base_url))
             .json(&body)
             .send()
@@ -43,10 +46,16 @@ impl LLMProvider for OllamaProvider {
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().await.unwrap_or_default();
-            return Err(OpenCLIError::Llm(format!("Ollama error {}: {}", status, text)));
+            return Err(OpenCLIError::Llm(format!(
+                "Ollama error {}: {}",
+                status, text
+            )));
         }
 
-        let json: Value = resp.json().await.map_err(|e| OpenCLIError::Llm(e.to_string()))?;
+        let json: Value = resp
+            .json()
+            .await
+            .map_err(|e| OpenCLIError::Llm(e.to_string()))?;
         let content = json
             .get("message")
             .and_then(|m| m.get("content"))
@@ -62,9 +71,13 @@ impl LLMProvider for OllamaProvider {
         })
     }
 
-    async fn stream_tokens(&self, req: LLMRequest, tx: Sender<TokenEvent>) -> Result<(), OpenCLIError> {
-        use tokio_stream::StreamExt;
+    async fn stream_tokens(
+        &self,
+        req: LLMRequest,
+        tx: Sender<TokenEvent>,
+    ) -> Result<(), OpenCLIError> {
         use reqwest::header;
+        use tokio_stream::StreamExt;
 
         let messages = self.format_messages(&req.messages);
         let body = serde_json::json!({
@@ -77,7 +90,8 @@ impl LLMProvider for OllamaProvider {
             }
         });
 
-        let resp = self.client
+        let resp = self
+            .client
             .post(format!("{}/api/chat", self.base_url))
             .header(header::CONTENT_TYPE, "application/json")
             .json(&body)
@@ -88,7 +102,11 @@ impl LLMProvider for OllamaProvider {
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().await.unwrap_or_default();
-            let _ = tx.send(TokenEvent::Error { message: format!("Ollama error {}: {}", status, text) }).await;
+            let _ = tx
+                .send(TokenEvent::Error {
+                    message: format!("Ollama error {}: {}", status, text),
+                })
+                .await;
             return Ok(());
         }
 
@@ -103,11 +121,23 @@ impl LLMProvider for OllamaProvider {
                 if let Ok(json) = serde_json::from_str::<Value>(line) {
                     let done = json.get("done").and_then(|d| d.as_bool()).unwrap_or(false);
                     if done {
-                        let _ = tx.send(TokenEvent::Stop { reason: StopReason::EndTurn }).await;
+                        let _ = tx
+                            .send(TokenEvent::Stop {
+                                reason: StopReason::EndTurn,
+                            })
+                            .await;
                         break;
                     }
-                    if let Some(delta) = json.get("message").and_then(|m| m.get("content")).and_then(|c| c.as_str()) {
-                        let _ = tx.send(TokenEvent::Text { delta: delta.to_string() }).await;
+                    if let Some(delta) = json
+                        .get("message")
+                        .and_then(|m| m.get("content"))
+                        .and_then(|c| c.as_str())
+                    {
+                        let _ = tx
+                            .send(TokenEvent::Text {
+                                delta: delta.to_string(),
+                            })
+                            .await;
                     }
                 }
             }
@@ -117,7 +147,8 @@ impl LLMProvider for OllamaProvider {
     }
 
     async fn list_models(&self) -> Result<Vec<ModelInfo>, OpenCLIError> {
-        let resp = self.client
+        let resp = self
+            .client
             .get(format!("{}/api/tags", self.base_url))
             .send()
             .await
@@ -127,24 +158,37 @@ impl LLMProvider for OllamaProvider {
             return Ok(Vec::new());
         }
 
-        let json: Value = resp.json().await.map_err(|e| OpenCLIError::Llm(e.to_string()))?;
-        let models = json.get("models").and_then(|m| m.as_array()).cloned().unwrap_or_default();
-        Ok(models.into_iter().filter_map(|m| {
-            let id = m.get("name")?.as_str()?.to_string();
-            Some(ModelInfo {
-                id: id.clone(),
-                name: id,
-                provider: "ollama".to_string(),
-                context_length: None,
+        let json: Value = resp
+            .json()
+            .await
+            .map_err(|e| OpenCLIError::Llm(e.to_string()))?;
+        let models = json
+            .get("models")
+            .and_then(|m| m.as_array())
+            .cloned()
+            .unwrap_or_default();
+        Ok(models
+            .into_iter()
+            .filter_map(|m| {
+                let id = m.get("name")?.as_str()?.to_string();
+                Some(ModelInfo {
+                    id: id.clone(),
+                    name: id,
+                    provider: "ollama".to_string(),
+                    context_length: None,
+                })
             })
-        }).collect())
+            .collect())
     }
 
     fn format_messages(&self, msgs: &[Message]) -> Value {
-        serde_json::json!(msgs.iter().map(|m| serde_json::json!({
-            "role": m.role,
-            "content": m.content,
-        })).collect::<Vec<_>>())
+        serde_json::json!(msgs
+            .iter()
+            .map(|m| serde_json::json!({
+                "role": m.role,
+                "content": m.content,
+            }))
+            .collect::<Vec<_>>())
     }
 
     fn parse_tool_call(&self, _raw: &Value) -> Option<ToolCall> {

@@ -1,9 +1,12 @@
+use crate::error::OpenCLIError;
+use crate::llm::provider::{
+    LLMProvider, LLMRequest, LLMResponse, Message, ModelInfo, StopReason, TokenEvent, TokenUsage,
+    ToolCall,
+};
 use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::Value;
 use tokio::sync::mpsc::Sender;
-use crate::error::OpenCLIError;
-use crate::llm::provider::{LLMProvider, LLMRequest, LLMResponse, Message, ModelInfo, StopReason, TokenEvent, TokenUsage, ToolCall};
 
 pub struct OpenRouterProvider {
     api_key: String,
@@ -30,7 +33,8 @@ impl LLMProvider for OpenRouterProvider {
             "max_tokens": req.max_tokens.unwrap_or(4096),
         });
 
-        let resp = self.client
+        let resp = self
+            .client
             .post("https://openrouter.ai/api/v1/chat/completions")
             .bearer_auth(&self.api_key)
             .header("HTTP-Referer", "https://opencli.agent")
@@ -42,10 +46,16 @@ impl LLMProvider for OpenRouterProvider {
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().await.unwrap_or_default();
-            return Err(OpenCLIError::Llm(format!("OpenRouter error {}: {}", status, text)));
+            return Err(OpenCLIError::Llm(format!(
+                "OpenRouter error {}: {}",
+                status, text
+            )));
         }
 
-        let json: Value = resp.json().await.map_err(|e| OpenCLIError::Llm(e.to_string()))?;
+        let json: Value = resp
+            .json()
+            .await
+            .map_err(|e| OpenCLIError::Llm(e.to_string()))?;
         let content = json
             .get("choices")
             .and_then(|c| c.as_array())
@@ -56,8 +66,16 @@ impl LLMProvider for OpenRouterProvider {
             .unwrap_or("")
             .to_string();
 
-        let prompt_tokens = json.get("usage").and_then(|u| u.get("prompt_tokens")).and_then(|t| t.as_u64()).unwrap_or(0) as u32;
-        let completion_tokens = json.get("usage").and_then(|u| u.get("completion_tokens")).and_then(|t| t.as_u64()).unwrap_or(0) as u32;
+        let prompt_tokens = json
+            .get("usage")
+            .and_then(|u| u.get("prompt_tokens"))
+            .and_then(|t| t.as_u64())
+            .unwrap_or(0) as u32;
+        let completion_tokens = json
+            .get("usage")
+            .and_then(|u| u.get("completion_tokens"))
+            .and_then(|t| t.as_u64())
+            .unwrap_or(0) as u32;
 
         let stop_reason_str = json
             .get("choices")
@@ -82,7 +100,9 @@ impl LLMProvider for OpenRouterProvider {
             .and_then(|m| m.get("tool_calls"))
             .and_then(|tc| tc.as_array())
             .map(|arr| {
-                arr.iter().filter_map(|tc| self.parse_tool_call(tc)).collect()
+                arr.iter()
+                    .filter_map(|tc| self.parse_tool_call(tc))
+                    .collect()
             })
             .unwrap_or_default();
 
@@ -90,11 +110,18 @@ impl LLMProvider for OpenRouterProvider {
             content,
             tool_calls,
             stop_reason,
-            usage: Some(TokenUsage { prompt_tokens, completion_tokens }),
+            usage: Some(TokenUsage {
+                prompt_tokens,
+                completion_tokens,
+            }),
         })
     }
 
-    async fn stream_tokens(&self, req: LLMRequest, tx: Sender<TokenEvent>) -> Result<(), OpenCLIError> {
+    async fn stream_tokens(
+        &self,
+        req: LLMRequest,
+        tx: Sender<TokenEvent>,
+    ) -> Result<(), OpenCLIError> {
         use tokio_stream::StreamExt;
 
         let messages = self.format_messages(&req.messages);
@@ -106,7 +133,8 @@ impl LLMProvider for OpenRouterProvider {
             "stream": true,
         });
 
-        let resp = self.client
+        let resp = self
+            .client
             .post("https://openrouter.ai/api/v1/chat/completions")
             .bearer_auth(&self.api_key)
             .header("HTTP-Referer", "https://opencli.agent")
@@ -118,7 +146,11 @@ impl LLMProvider for OpenRouterProvider {
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().await.unwrap_or_default();
-            let _ = tx.send(TokenEvent::Error { message: format!("OpenRouter error {}: {}", status, text) }).await;
+            let _ = tx
+                .send(TokenEvent::Error {
+                    message: format!("OpenRouter error {}: {}", status, text),
+                })
+                .await;
             return Ok(());
         }
 
@@ -130,7 +162,11 @@ impl LLMProvider for OpenRouterProvider {
                 let line = line.trim();
                 if line.is_empty() || line == "data: [DONE]" {
                     if line == "data: [DONE]" {
-                        let _ = tx.send(TokenEvent::Stop { reason: StopReason::EndTurn }).await;
+                        let _ = tx
+                            .send(TokenEvent::Stop {
+                                reason: StopReason::EndTurn,
+                            })
+                            .await;
                     }
                     continue;
                 }
@@ -144,7 +180,11 @@ impl LLMProvider for OpenRouterProvider {
                         .and_then(|d| d.get("content"))
                         .and_then(|c| c.as_str())
                     {
-                        let _ = tx.send(TokenEvent::Text { delta: delta.to_string() }).await;
+                        let _ = tx
+                            .send(TokenEvent::Text {
+                                delta: delta.to_string(),
+                            })
+                            .await;
                     }
                 }
             }
@@ -154,7 +194,8 @@ impl LLMProvider for OpenRouterProvider {
     }
 
     async fn list_models(&self) -> Result<Vec<ModelInfo>, OpenCLIError> {
-        let resp = self.client
+        let resp = self
+            .client
             .get("https://openrouter.ai/api/v1/models")
             .bearer_auth(&self.api_key)
             .send()
@@ -165,34 +206,62 @@ impl LLMProvider for OpenRouterProvider {
             return Ok(Vec::new());
         }
 
-        let json: Value = resp.json().await.map_err(|e| OpenCLIError::Llm(e.to_string()))?;
-        let data = json.get("data").and_then(|d| d.as_array()).cloned().unwrap_or_default();
-        Ok(data.into_iter().filter_map(|m| {
-            let id = m.get("id")?.as_str()?.to_string();
-            let name = m.get("name").and_then(|n| n.as_str()).unwrap_or(&id).to_string();
-            let context_length = m.get("context_length").and_then(|c| c.as_u64()).map(|c| c as u32);
-            Some(ModelInfo {
-                id,
-                name,
-                provider: "openrouter".to_string(),
-                context_length,
+        let json: Value = resp
+            .json()
+            .await
+            .map_err(|e| OpenCLIError::Llm(e.to_string()))?;
+        let data = json
+            .get("data")
+            .and_then(|d| d.as_array())
+            .cloned()
+            .unwrap_or_default();
+        Ok(data
+            .into_iter()
+            .filter_map(|m| {
+                let id = m.get("id")?.as_str()?.to_string();
+                let name = m
+                    .get("name")
+                    .and_then(|n| n.as_str())
+                    .unwrap_or(&id)
+                    .to_string();
+                let context_length = m
+                    .get("context_length")
+                    .and_then(|c| c.as_u64())
+                    .map(|c| c as u32);
+                Some(ModelInfo {
+                    id,
+                    name,
+                    provider: "openrouter".to_string(),
+                    context_length,
+                })
             })
-        }).collect())
+            .collect())
     }
 
     fn format_messages(&self, msgs: &[Message]) -> Value {
-        serde_json::json!(msgs.iter().map(|m| serde_json::json!({
-            "role": m.role,
-            "content": m.content,
-        })).collect::<Vec<_>>())
+        serde_json::json!(msgs
+            .iter()
+            .map(|m| serde_json::json!({
+                "role": m.role,
+                "content": m.content,
+            }))
+            .collect::<Vec<_>>())
     }
 
     fn parse_tool_call(&self, raw: &Value) -> Option<ToolCall> {
         let id = raw.get("id")?.as_str()?.to_string();
         let name = raw.get("function")?.get("name")?.as_str()?.to_string();
-        let args_str = raw.get("function")?.get("arguments")?.as_str().unwrap_or("{}");
+        let args_str = raw
+            .get("function")?
+            .get("arguments")?
+            .as_str()
+            .unwrap_or("{}");
         let arguments = serde_json::from_str(args_str).unwrap_or(serde_json::json!({}));
-        Some(ToolCall { id, name, arguments })
+        Some(ToolCall {
+            id,
+            name,
+            arguments,
+        })
     }
 
     async fn health_check(&self) -> bool {

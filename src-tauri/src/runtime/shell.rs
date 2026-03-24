@@ -1,7 +1,7 @@
+use crate::error::OpenCLIError;
 use std::time::Duration;
 use tokio::process::Command;
 use tokio::time::timeout;
-use crate::error::OpenCLIError;
 
 pub struct ShellExecutor {
     timeout_secs: u64,
@@ -50,8 +50,13 @@ impl ShellExecutor {
         cmd.stderr(std::process::Stdio::piped());
 
         let result = timeout(timeout_duration, async {
-            let child = cmd.spawn().map_err(|e| OpenCLIError::Shell(e.to_string()))?;
-            let output = child.wait_with_output().await.map_err(|e| OpenCLIError::Shell(e.to_string()))?;
+            let child = cmd
+                .spawn()
+                .map_err(|e| OpenCLIError::Shell(e.to_string()))?;
+            let output = child
+                .wait_with_output()
+                .await
+                .map_err(|e| OpenCLIError::Shell(e.to_string()))?;
             Ok::<_, OpenCLIError>(output)
         })
         .await;
@@ -89,12 +94,18 @@ impl ShellExecutor {
         let image = self.sandbox_image.as_deref().unwrap_or("alpine:latest");
         let mut cmd = Command::new("docker");
         cmd.args([
-            "run", "--rm",
-            "--cpus", "1",
-            "--memory", "512m",
-            "--network", "none",
+            "run",
+            "--rm",
+            "--cpus",
+            "1",
+            "--memory",
+            "512m",
+            "--network",
+            "none",
             image,
-            "/bin/sh", "-c", command,
+            "/bin/sh",
+            "-c",
+            command,
         ]);
         cmd
     }
