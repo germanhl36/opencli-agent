@@ -19,26 +19,31 @@ import styles from './App.module.css';
 
 type Panel = 'chat' | 'skills' | 'model' | 'settings';
 
+interface SelectedFile {
+  name: string;
+  content: string;
+}
+
 export default function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [activePanel, setActivePanel] = useState<Panel>('chat');
   const [activeDiff, setActiveDiff] = useState<UnifiedDiff | null>(null);
   const [workspacePath, setWorkspacePath] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
+  // Lifted chat input so skills can read + clear it
+  const [chatInput, setChatInput] = useState('');
 
   const { messages, isLoading, error, send, reset, start } = useSession();
   const { approve, reject, currentRequest } = useApproval();
   const { streamingContent, isStreaming } = useStream();
 
-  // Load config on mount
   useEffect(() => {
     loadConfig().then((cfg) => {
       setConfig(cfg);
-      // Apply theme
       applyTheme(cfg.theme);
     }).catch(console.error);
   }, []);
 
-  // Apply font size when config changes
   useEffect(() => {
     if (config) {
       document.documentElement.style.setProperty('--font-size', `${config.fontSize}px`);
@@ -48,26 +53,21 @@ export default function App() {
 
   const applyTheme = (theme: string) => {
     const root = document.documentElement;
-    if (theme === 'light') {
-      root.setAttribute('data-theme', 'light');
-    } else if (theme === 'dark') {
-      root.setAttribute('data-theme', 'dark');
-    } else {
-      root.removeAttribute('data-theme'); // system
-    }
+    if (theme === 'light') root.setAttribute('data-theme', 'light');
+    else if (theme === 'dark') root.setAttribute('data-theme', 'dark');
+    else root.removeAttribute('data-theme');
   };
 
   const handleConfigChange = useCallback(async (newConfig: AppConfig) => {
     setConfig(newConfig);
-    try {
-      await saveConfig(newConfig);
-    } catch (err) {
-      console.error('Failed to save config:', err);
-    }
+    try { await saveConfig(newConfig); } catch (err) { console.error(err); }
   }, []);
 
+  // Send from chat input — clears input and selected file after sending
   const handleSend = useCallback(async (content: string) => {
     await send(content);
+    setChatInput('');
+    setSelectedFile(null);
   }, [send]);
 
   const handleOpenFolder = useCallback(async () => {
@@ -79,20 +79,45 @@ export default function App() {
     setActivePanel('chat');
   }, [start]);
 
+  // File selection now stores content rather than auto-sending
   const handleOpenFile = useCallback(async () => {
-    const selected = await openDialog({ directory: false, multiple: false, title: 'Select a file to analyse' });
+    const selected = await openDialog({ directory: false, multiple: false, title: 'Select a file' });
     if (!selected) return;
     const filePath = Array.isArray(selected) ? selected[0] : selected;
     setActivePanel('chat');
     try {
       const content = await readFileContent(filePath);
-      // Support both / and \ path separators
-      const fileName = filePath.replace(/\\/g, '/').split('/').pop() ?? filePath;
-      await send(`Please analyse this file — \`${fileName}\`:\n\n\`\`\`\n${content}\n\`\`\``);
+      const name = filePath.replace(/\\/g, '/').split('/').pop() ?? filePath;
+      setSelectedFile({ name, content });
     } catch (err) {
       await send(`⚠️ Failed to read file: ${String(err)}`);
     }
   }, [send]);
+
+  // Build the full message for a skill: skill prompt + typed text + file content
+  const handleSkillActivated = useCallback(async (skillPrompt: string) => {
+    const parts: string[] = [skillPrompt];
+
+    if (chatInput.trim()) {
+      parts.push(chatInput.trim());
+    }
+
+    if (selectedFile) {
+      parts.push(`\`\`\`${selectedFile.name}\n${selectedFile.content}\n\`\`\``);
+    }
+
+    const fullMessage = parts.join('\n\n');
+    setChatInput('');
+    setSelectedFile(null);
+    setActivePanel('chat');
+    await send(fullMessage);
+  }, [chatInput, selectedFile, send]);
+
+  const handleAgentStarted = useCallback(async (steps: { prompt: string }[]) => {
+    if (steps.length === 0) return;
+    setActivePanel('chat');
+    await handleSkillActivated(steps[0].prompt);
+  }, [handleSkillActivated]);
 
   return (
     <div className={styles.appRoot}>
@@ -104,54 +129,27 @@ export default function App() {
         </div>
 
         <div className={styles.navItems}>
-          <button
-            className={`${styles.navItem} ${activePanel === 'chat' ? styles.navItemActive : ''}`}
-            onClick={() => setActivePanel('chat')}
-            aria-label="Chat"
-            title="Chat"
-          >
-            <span className={styles.navIcon}>💬</span>
-            <span className={styles.navLabel}>Chat</span>
-          </button>
-
-          <button
-            className={`${styles.navItem} ${activePanel === 'skills' ? styles.navItemActive : ''}`}
-            onClick={() => setActivePanel('skills')}
-            aria-label="Skills & Agents"
-            title="Skills & Agents"
-          >
-            <span className={styles.navIcon}>⚡</span>
-            <span className={styles.navLabel}>Skills</span>
-          </button>
-
-          <button
-            className={`${styles.navItem} ${activePanel === 'model' ? styles.navItemActive : ''}`}
-            onClick={() => setActivePanel('model')}
-            aria-label="Model Picker"
-            title="Model Picker"
-          >
-            <span className={styles.navIcon}>🧠</span>
-            <span className={styles.navLabel}>Model</span>
-          </button>
-
-          <button
-            className={`${styles.navItem} ${activePanel === 'settings' ? styles.navItemActive : ''}`}
-            onClick={() => setActivePanel('settings')}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <span className={styles.navIcon}>⚙️</span>
-            <span className={styles.navLabel}>Settings</span>
-          </button>
+          {(['chat', 'skills', 'model', 'settings'] as Panel[]).map((panel) => (
+            <button
+              key={panel}
+              className={`${styles.navItem} ${activePanel === panel ? styles.navItemActive : ''}`}
+              onClick={() => setActivePanel(panel)}
+              aria-label={panel}
+              title={panel}
+            >
+              <span className={styles.navIcon}>
+                {panel === 'chat' ? '💬' : panel === 'skills' ? '⚡' : panel === 'model' ? '🧠' : '⚙️'}
+              </span>
+              <span className={styles.navLabel}>{panel === 'model' ? 'Model' : panel.charAt(0).toUpperCase() + panel.slice(1)}</span>
+            </button>
+          ))}
         </div>
 
         {config && (
           <div className={styles.sidebarFooter}>
             <span className={styles.providerBadge}>{config.activeProvider}</span>
             <span className={styles.modelBadge} title={config.activeModel}>
-              {config.activeModel.length > 12
-                ? config.activeModel.slice(0, 12) + '…'
-                : config.activeModel}
+              {config.activeModel.length > 12 ? config.activeModel.slice(0, 12) + '…' : config.activeModel}
             </span>
           </div>
         )}
@@ -159,15 +157,18 @@ export default function App() {
 
       {/* Main content */}
       <main className={styles.mainContent}>
-        {/* Chat panel — always mounted but hidden when not active */}
         <div className={`${styles.panel} ${activePanel === 'chat' ? styles.panelVisible : styles.panelHidden}`}>
           <ChatPanel
             messages={messages}
             isLoading={isLoading || isStreaming}
             streamingContent={streamingContent || undefined}
+            inputValue={chatInput}
+            onInputChange={setChatInput}
             onSend={handleSend}
             onReset={reset}
             workspacePath={workspacePath}
+            selectedFile={selectedFile}
+            onClearFile={() => setSelectedFile(null)}
             onOpenFolder={handleOpenFolder}
             onOpenFile={handleOpenFile}
           />
@@ -176,16 +177,8 @@ export default function App() {
         {activePanel === 'skills' && (
           <div className={styles.panel}>
             <SkillsPanel
-              onSkillActivated={(prompt) => {
-                setActivePanel('chat');
-                send(prompt);
-              }}
-              onAgentStarted={(steps) => {
-                setActivePanel('chat');
-                if (steps.length > 0) {
-                  send(steps[0].prompt);
-                }
-              }}
+              onSkillActivated={handleSkillActivated}
+              onAgentStarted={handleAgentStarted}
             />
           </div>
         )}
@@ -202,19 +195,12 @@ export default function App() {
           </div>
         )}
 
-        {/* Diff viewer overlay */}
         {activeDiff && (
           <div className={styles.diffOverlay}>
             <div className={styles.diffPanel}>
               <div className={styles.diffHeader}>
                 <h3 className={styles.diffTitle}>File Changes</h3>
-                <button
-                  className={styles.diffClose}
-                  onClick={() => setActiveDiff(null)}
-                  aria-label="Close diff viewer"
-                >
-                  ✕
-                </button>
+                <button className={styles.diffClose} onClick={() => setActiveDiff(null)} aria-label="Close diff viewer">✕</button>
               </div>
               <div className={styles.diffContent}>
                 <DiffViewer diff={activeDiff} />
@@ -223,20 +209,10 @@ export default function App() {
           </div>
         )}
 
-        {/* Error bar */}
-        {error && (
-          <div className={styles.errorBar} role="alert">
-            {error}
-          </div>
-        )}
+        {error && <div className={styles.errorBar} role="alert">{error}</div>}
       </main>
 
-      {/* Approval dialog — rendered at root level for proper z-index */}
-      <ApprovalDialog
-        request={currentRequest}
-        onApprove={approve}
-        onReject={reject}
-      />
+      <ApprovalDialog request={currentRequest} onApprove={approve} onReject={reject} />
     </div>
   );
 }

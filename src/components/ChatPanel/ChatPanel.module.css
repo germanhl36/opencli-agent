@@ -61,29 +61,60 @@
   color: var(--color-text);
 }
 
-.workspaceBar {
+.contextBar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 6px 16px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   font-size: 12px;
   color: var(--color-text-muted);
-  overflow: hidden;
 }
 
-.workspaceIcon {
-  flex-shrink: 0;
+.contextItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
 }
 
-.workspacePath {
+.contextPath {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-mono);
   direction: rtl;
   text-align: left;
+  max-width: 300px;
+}
+
+.contextFileName {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-accent);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clearFileBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 1;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.clearFileBtn:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
 }
 
 .messageList {
