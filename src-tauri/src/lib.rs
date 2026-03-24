@@ -35,14 +35,25 @@ pub fn run() {
             let loader = config::loader::ConfigLoader::new(app_data_dir.clone());
             let app_config = loader.load().unwrap_or_default();
 
-            // Load built-in skills and agents from the resource directory.
-            // In dev mode Tauri resolves resources relative to the project root.
-            let resource_dir = app.path().resource_dir().ok();
+            // Load built-in skills and agents.
+            // In debug builds use the compile-time project root (reliable in dev mode).
+            // In release builds use the bundled resource directory.
+            #[cfg(debug_assertions)]
+            let plugins_root =
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+            #[cfg(not(debug_assertions))]
+            let plugins_root = app
+                .path()
+                .resource_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("."));
+
             let mut registry = plugins::PluginRegistry::new();
-            if let Some(ref res) = resource_dir {
-                let commands_file = res.join("skills").join("commands.yaml");
-                registry.load_all(&res.join("skills"), &res.join("agents"), &commands_file);
-            }
+            let commands_file = plugins_root.join("skills").join("commands.yaml");
+            registry.load_all(
+                &plugins_root.join("skills"),
+                &plugins_root.join("agents"),
+                &commands_file,
+            );
 
             let state = AppState {
                 session: std::sync::Arc::new(tokio::sync::RwLock::new(
