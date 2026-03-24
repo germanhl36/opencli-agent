@@ -35,15 +35,22 @@ pub fn run() {
             let loader = config::loader::ConfigLoader::new(app_data_dir.clone());
             let app_config = loader.load().unwrap_or_default();
 
+            // Load built-in skills and agents from the resource directory.
+            // In dev mode Tauri resolves resources relative to the project root.
+            let resource_dir = app.path().resource_dir().ok();
+            let mut registry = plugins::PluginRegistry::new();
+            if let Some(ref res) = resource_dir {
+                let commands_file = res.join("skills").join("commands.yaml");
+                registry.load_all(&res.join("skills"), &res.join("agents"), &commands_file);
+            }
+
             let state = AppState {
                 session: std::sync::Arc::new(tokio::sync::RwLock::new(
                     core::session::SessionState::new(),
                 )),
                 config: std::sync::Arc::new(tokio::sync::RwLock::new(app_config)),
                 approval_gate: std::sync::Arc::new(core::approval::ApprovalGate::new()),
-                plugin_registry: std::sync::Arc::new(tokio::sync::RwLock::new(
-                    plugins::PluginRegistry::new(),
-                )),
+                plugin_registry: std::sync::Arc::new(tokio::sync::RwLock::new(registry)),
                 audit_logger: std::sync::Arc::new(tokio::sync::Mutex::new(
                     runtime::audit::AuditLogger::new(app_data_dir.join("audit.log")),
                 )),
