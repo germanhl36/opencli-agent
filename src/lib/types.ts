@@ -1,5 +1,27 @@
 // TypeScript mirror of all Rust IPC structs
 
+// ---- Plugins ----
+
+export interface Skill {
+  name: string;
+  description: string;
+  prompt: string;
+  contextFiles: string[];
+  systemOverride: string | null;
+}
+
+export interface AgentStep {
+  goal: string;
+  prompt: string;
+  allowedTools: string[];
+}
+
+export interface AgentDefinition {
+  name: string;
+  description: string;
+  steps: AgentStep[];
+}
+
 // ---- Config ----
 
 export interface AppConfig {

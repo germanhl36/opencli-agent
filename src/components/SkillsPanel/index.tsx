@@ -1,25 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { reloadPlugins, activateSkill, startAgent } from '../../lib/tauri';
+import { listSkills, listAgents, reloadPlugins, activateSkill, startAgent } from '../../lib/tauri';
+import type { Skill, AgentDefinition, AgentStep } from '../../lib/types';
 import styles from './SkillsPanel.module.css';
-
-interface Skill {
-  name: string;
-  description: string;
-  prompt: string;
-  contextFiles: string[];
-}
-
-interface AgentStep {
-  goal: string;
-  prompt: string;
-  allowedTools: string[];
-}
-
-interface Agent {
-  name: string;
-  description: string;
-  steps: AgentStep[];
-}
 
 interface SkillsPanelProps {
   onSkillActivated?: (prompt: string, skillName: string) => void;
@@ -31,7 +13,7 @@ type Tab = 'skills' | 'agents';
 export default function SkillsPanel({ onSkillActivated, onAgentStarted }: SkillsPanelProps) {
   const [tab, setTab] = useState<Tab>('skills');
   const [skills, setSkills] = useState<Skill[]>([]);
-  const [agents, setAgents] = useState<Agent[]>([]);
+  const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activatingSkill, setActivatingSkill] = useState<string | null>(null);
   const [startingAgent, setStartingAgent] = useState<string | null>(null);
@@ -41,21 +23,24 @@ export default function SkillsPanel({ onSkillActivated, onAgentStarted }: Skills
     setIsLoading(true);
     setError(null);
     try {
+      const [loadedSkills, loadedAgents] = await Promise.all([listSkills(), listAgents()]);
+      setSkills(loadedSkills);
+      setAgents(loadedAgents);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleReload = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
       await reloadPlugins();
-      // After reload, skills/agents are in the registry — we don't have a direct list endpoint
-      // We use the hardcoded built-ins for the initial display
-      setSkills([
-        { name: 'refactor', description: 'Refactor selected code for clarity and maintainability', prompt: '', contextFiles: [] },
-        { name: 'explain-code', description: 'Explain what the selected code does', prompt: '', contextFiles: [] },
-        { name: 'write-tests', description: 'Write tests for the selected code', prompt: '', contextFiles: [] },
-        { name: 'summarise-pr', description: 'Summarise changes in the current diff', prompt: '', contextFiles: [] },
-        { name: 'debug', description: 'Debug the selected code or error', prompt: '', contextFiles: [] },
-      ]);
-      setAgents([
-        { name: 'code-review', description: 'Multi-step code review workflow', steps: [] },
-        { name: 'dependency-update', description: 'Update project dependencies safely', steps: [] },
-        { name: 'scaffold-feature', description: 'Scaffold a new feature with boilerplate', steps: [] },
-      ]);
+      const [loadedSkills, loadedAgents] = await Promise.all([listSkills(), listAgents()]);
+      setSkills(loadedSkills);
+      setAgents(loadedAgents);
     } catch (err) {
       setError(String(err));
     } finally {
@@ -114,7 +99,7 @@ export default function SkillsPanel({ onSkillActivated, onAgentStarted }: Skills
         </div>
         <button
           className={styles.reloadButton}
-          onClick={loadPlugins}
+          onClick={handleReload}
           disabled={isLoading}
           aria-label="Reload plugins"
         >

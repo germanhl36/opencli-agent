@@ -102,6 +102,14 @@ export async function reloadPlugins(): Promise<void> {
   return invoke<void>('reload_plugins');
 }
 
+export async function listSkills(): Promise<import('./types').Skill[]> {
+  return invoke('list_skills');
+}
+
+export async function listAgents(): Promise<import('./types').AgentDefinition[]> {
+  return invoke('list_agents');
+}
+
 export async function activateSkill(skillName: string, userInput: string): Promise<string> {
   return invoke<string>('activate_skill', { skillName, userInput });
 }

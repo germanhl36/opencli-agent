@@ -61,32 +61,43 @@ pub async fn store_api_key(provider: String, key: String) -> Result<(), String> 
 #[tauri::command]
 pub async fn reload_plugins(
     state: State<'_, AppState>,
-    app: tauri::AppHandle,
+    _app: tauri::AppHandle,
 ) -> Result<(), String> {
-    use std::path::PathBuf;
-
-    let app_data_dir = app
+    // Always reload from the built-in skills directory so the registry
+    // is never left empty after a reload call.
+    #[cfg(debug_assertions)]
+    let builtin_root =
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+    #[cfg(not(debug_assertions))]
+    let builtin_root = _app
         .path()
-        .app_data_dir()
-        .map_err(|e: tauri::Error| e.to_string())?;
+        .resource_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from("."));
 
-    // Look for skills/agents in app_data_dir and working directory
-    let config = state.config.read().await;
-    let working_dir = config
-        .working_directory
-        .clone()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| app_data_dir.clone());
-    drop(config);
-
-    let skills_dir = working_dir.join("skills");
-    let agents_dir = working_dir.join("agents");
-    let commands_file = working_dir.join("commands.yaml");
+    let skills_dir = builtin_root.join("skills");
+    let agents_dir = builtin_root.join("agents");
+    let commands_file = builtin_root.join("skills").join("commands.yaml");
 
     let mut registry = state.plugin_registry.write().await;
     registry.load_all(&skills_dir, &agents_dir, &commands_file);
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn list_skills(
+    state: State<'_, AppState>,
+) -> Result<Vec<crate::plugins::skill::Skill>, String> {
+    let registry = state.plugin_registry.read().await;
+    Ok(registry.skills.clone())
+}
+
+#[tauri::command]
+pub async fn list_agents(
+    state: State<'_, AppState>,
+) -> Result<Vec<crate::plugins::agent::Agent>, String> {
+    let registry = state.plugin_registry.read().await;
+    Ok(registry.agents.clone())
 }
 
 #[tauri::command]

@@ -91,6 +91,8 @@ pub fn run() {
             commands::config::list_models,
             commands::config::store_api_key,
             commands::config::reload_plugins,
+            commands::config::list_skills,
+            commands::config::list_agents,
             commands::config::activate_skill,
             commands::config::start_agent,
         ])
