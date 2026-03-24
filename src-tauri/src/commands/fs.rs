@@ -125,5 +125,17 @@ pub async fn read_file_content(path: String) -> Result<String, String> {
             size / 1024
         ));
     }
-    std::fs::read_to_string(&path).map_err(|e| e.to_string())
+    // Try UTF-8 first; fall back to lossy decoding for Latin-1 / other encodings
+    match std::fs::read_to_string(&path) {
+        Ok(s) => Ok(s),
+        Err(_) => {
+            let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+            // Reject true binary files (high proportion of null bytes)
+            let null_count = bytes.iter().filter(|&&b| b == 0).count();
+            if null_count > bytes.len() / 10 {
+                return Err("File appears to be binary and cannot be analysed as text.".to_string());
+            }
+            Ok(String::from_utf8_lossy(&bytes).into_owned())
+        }
+    }
 }
