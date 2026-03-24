@@ -58,7 +58,7 @@ impl SessionState {
             id: Uuid::new_v4(),
             messages: Vec::new(),
             provider: "ollama".to_string(),
-            model: "llama3".to_string(),
+            model: "llama3.2:latest".to_string(),
             working_directory: None,
         }
     }

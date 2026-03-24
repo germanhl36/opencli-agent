@@ -17,7 +17,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             active_provider: "ollama".to_string(),
-            active_model: "llama3.2".to_string(),
+            active_model: "llama3.2:latest".to_string(),
             theme: "system".to_string(),
             font_size: 14,
             command_timeout_s: 30,
